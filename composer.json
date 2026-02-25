@@ -1,0 +1,31 @@
+{
+  "name": "ashbi/woocommerce-error-monitor",
+  "description": "Tracks WooCommerce checkout errors, JS crashes, and broken buttons, sending alerts to a central Node.js monitoring server.",
+  "type": "wordpress-plugin",
+  "license": "GPL-2.0-or-later",
+  "authors": [
+    {
+      "name": "Cameron Smith",
+      "email": "cameron@ashbi.ca"
+    }
+  ],
+  "require": {
+    "php": ">=7.2"
+  },
+  "require-dev": {
+    "squizlabs/php_codesniffer": "^3.7",
+    "wp-coding-standards/wpcs": "^2.3",
+    "phpcompatibility/phpcompatibility-wp": "^2.1",
+    "dealerdirect/phpcodesniffer-composer-installer": "^0.7.2"
+  },
+  "scripts": {
+    "lint": "phpcs",
+    "lint-fix": "phpcbf",
+    "test": "echo \"No tests specified\""
+  },
+  "config": {
+    "allow-plugins": {
+      "dealerdirect/phpcodesniffer-composer-installer": true
+    }
+  }
+}
