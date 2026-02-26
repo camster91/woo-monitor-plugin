@@ -4,7 +4,8 @@
  * Plugin URI: https://ashbi.ca
  * Description: Tracks WooCommerce checkout errors, JS crashes, and broken buttons, sending alerts to a central Node.js monitoring server.
  * Version: 1.1.1
- * Author: Cameron Smith
+ * Author: Ashbi
+ * Author URI: https://ashbi.ca
  * License: GPL2
  * Text Domain: woo-monitor
  */
