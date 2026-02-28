@@ -2,9 +2,9 @@
 Contributors: cameronashbi
 Tags: woocommerce, monitoring, error tracking, checkout, alerts
 Requires at least: 5.0
-Tested up to: 6.5
+Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 1.1.2
+Stable tag: 1.2.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -15,9 +15,9 @@ Track WooCommerce checkout errors, JavaScript crashes, and broken buttons, sendi
 **WooCommerce Error Monitor** is a powerful plugin that helps you catch and fix checkout issues before they cost you sales. It monitors your WooCommerce store for:
 
 * **Checkout Errors**: Invalid card messages, shipping errors, and other WooCommerce UI error banners
-* **JavaScript Crashes**: Broken scripts that make buttons unclickable
-* **AJAX Failures**: Failed add-to-cart and checkout requests
-* **Button Issues**: Buttons that appear stuck or unresponsive
+* **JavaScript Crashes**: Broken scripts that may break checkout functionality
+* **AJAX Failures**: Failed add-to-cart and checkout requests (jQuery AJAX)
+* **Fetch API Failures**: Failed WooCommerce Blocks checkout requests (Fetch API)
 
 All errors are sent to a central Node.js monitoring server (separate application) which can send email alerts, helping you fix issues quickly.
 
@@ -93,16 +93,35 @@ The plugin should work with any WordPress theme and most plugins. It uses standa
 
 == Changelog ==
 
-= 1.1.2 =
-* **ADDED**: Comprehensive test suite with PHPUnit
-* **ADDED**: GitHub Actions CI/CD pipeline
-* **SECURITY**: Security audit and fixes
-* **SECURITY**: Added nonce verification for form submissions
-* **SECURITY**: Implemented proper input sanitization and output escaping
-* **IMPROVEMENT**: Updated directory structure for better organization
-* **IMPROVEMENT**: Enhanced code quality and standards compliance
-* **IMPROVEMENT**: Improved plugin headers and metadata
-* **IMPROVEMENT**: Created SECURITY.md with best practices guidelines
+= 1.2.2 =
+* **SECURITY**: Comprehensive security audit performed
+* **SECURITY**: Added nonce verification for all form submissions
+* **SECURITY**: Implemented proper input sanitization for user data
+* **SECURITY**: Added output escaping for all user-facing strings
+* **SECURITY**: Created SECURITY.md with best practices documentation
+* **QUALITY**: Comprehensive PHPUnit test suite added
+* **QUALITY**: GitHub Actions CI/CD pipeline for automated testing
+* **QUALITY**: Enhanced code quality and WordPress standards compliance
+* **QUALITY**: Updated directory structure for better maintainability
+* **QUALITY**: Improved plugin headers and metadata
+
+= 1.2.1 =
+* **FEATURE**: Unhandled promise rejection tracking for async WooCommerce errors
+* **BUG FIX**: sendErrorAlert now uses native fetch, bypassing monkey-patched override
+* **BUG FIX**: Fetch override skips webhook URL to prevent self-interception
+* **IMPROVEMENT**: Default webhook URL extracted into constant
+* **IMPROVEMENT**: Added Requires at least and Requires PHP plugin headers
+
+= 1.2.0 =
+* **SECURITY**: Fixed double-escaping of webhook URL that mangled URLs with query parameters
+* **FEATURE**: Added Fetch API interception for WooCommerce Blocks checkout support
+* **FEATURE**: Added "Send Test Alert" button in admin settings
+* **BUG FIX**: JavaScript error handler now catches errors before DOMContentLoaded
+* **BUG FIX**: Empty error messages are now filtered out
+* **IMPROVEMENT**: Added script deduplication guard
+* **IMPROVEMENT**: Added Requires Plugins header for WooCommerce dependency
+* **IMPROVEMENT**: Fixed checkbox description UX in admin settings
+* **IMPROVEMENT**: Added version constant for programmatic use
 
 = 1.1.1 =
 * **BUG FIX**: Added check for enabled setting
@@ -125,8 +144,14 @@ The plugin should work with any WordPress theme and most plugins. It uses standa
 
 == Upgrade Notice ==
 
-= 1.1.2 =
+= 1.2.2 =
 Security and quality release. Adds comprehensive test suite, security enhancements, and improved code structure.
+
+= 1.2.1 =
+Adds async error tracking, fixes fetch override self-interception, adds WordPress compatibility headers.
+
+= 1.2.0 =
+Security fix, WooCommerce Blocks support, one-click test button. Settings preserved.
 
 = 1.1.1 =
 Bug fix release. Settings from previous versions are preserved.
