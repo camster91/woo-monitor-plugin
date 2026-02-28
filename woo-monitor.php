@@ -3,11 +3,13 @@
  * Plugin Name: WooCommerce Error Monitor
  * Plugin URI: https://ashbi.ca
  * Description: Tracks WooCommerce checkout errors, JS crashes, and broken buttons, sending alerts to a central Node.js monitoring server.
- * Version: 1.2.0
+ * Version: 1.2.1
  * Author: Ashbi
  * Author URI: https://ashbi.ca
  * License: GPL2
  * Text Domain: woo-monitor
+ * Requires at least: 5.0
+ * Requires PHP: 7.2
  * Requires Plugins: woocommerce
  */
 
@@ -16,7 +18,8 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'WOO_MONITOR_VERSION', '1.2.0' );
+define( 'WOO_MONITOR_VERSION', '1.2.1' );
+define( 'WOO_MONITOR_DEFAULT_WEBHOOK', 'https://woo.ashbi.ca/api/track-woo-error' );
 
 // Initialize plugin
 add_action( 'plugins_loaded', 'woo_monitor_init' );
@@ -58,7 +61,7 @@ function woo_monitor_frontend_tracker() {
     }
     
     // Get webhook URL from options
-    $webhook_url = get_option( 'woo_monitor_webhook_url', 'https://woo.ashbi.ca/api/track-woo-error' );
+    $webhook_url = get_option( 'woo_monitor_webhook_url', WOO_MONITOR_DEFAULT_WEBHOOK );
     
     if ( empty( $webhook_url ) ) {
         // No webhook URL configured, don't load tracking script
@@ -84,6 +87,8 @@ function woo_monitor_frontend_tracker() {
         var siteName = window.location.hostname;
         var errorCount = 0;
         var maxErrorsPerPage = 10;
+        // Save native fetch reference so sendErrorAlert always bypasses any override
+        var nativeFetch = window.fetch.bind(window);
         console.log('WooMonitor: Webhook URL configured');
 
         function sendErrorAlert(type, message) {
@@ -103,7 +108,7 @@ function woo_monitor_frontend_tracker() {
             var controller = new AbortController();
             var timeoutId = setTimeout(function() { controller.abort(); }, 5000);
 
-            fetch(webhookUrl, {
+            nativeFetch(webhookUrl, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -138,14 +143,20 @@ function woo_monitor_frontend_tracker() {
         // 1. Catch Global JavaScript Errors - registered early to catch pre-DOMReady crashes
         window.addEventListener('error', function(e) {
             if (e.filename && e.filename.indexOf(siteName) !== -1) {
-                sendErrorAlert("JavaScript Crash (Might break buttons)", e.message + ' at ' + e.filename + ':' + e.lineno + ':' + e.colno);
+                sendErrorAlert("JavaScript Crash", e.message + ' at ' + e.filename + ':' + e.lineno + ':' + e.colno);
             }
+        });
+
+        // 2. Catch unhandled promise rejections (async errors from WooCommerce Blocks, etc.)
+        window.addEventListener('unhandledrejection', function(e) {
+            var message = (e.reason && e.reason.message) ? e.reason.message : String(e.reason);
+            sendErrorAlert("Unhandled Promise Rejection", message);
         });
         <?php endif; ?>
 
         document.addEventListener("DOMContentLoaded", function() {
             <?php if ( $track_ui_errors ) : ?>
-            // 2. Catch WooCommerce UI Error Banners (e.g., "Invalid Card", "No shipping options")
+            // 3. Catch WooCommerce UI Error Banners (e.g., "Invalid Card", "No shipping options")
             var errorSelector = '.woocommerce-error, .woocommerce-NoticeGroup-checkout, .wc-block-components-notice-banner.is-error';
             function checkErrorNode(node) {
                 if (node.nodeType !== 1) return;
@@ -174,7 +185,7 @@ function woo_monitor_frontend_tracker() {
             <?php endif; ?>
 
             <?php if ( $track_ajax_errors ) : ?>
-            // 3. Catch AJAX "Add to Cart" or "Checkout" Failures (jQuery)
+            // 4. Catch AJAX "Add to Cart" or "Checkout" Failures (jQuery)
             <?php if ( wp_script_is( 'jquery', 'enqueued' ) ) : ?>
             if (typeof jQuery !== 'undefined') {
                 jQuery(document).ajaxError(function(event, jqxhr, settings) {
@@ -185,10 +196,14 @@ function woo_monitor_frontend_tracker() {
             }
             <?php endif; ?>
 
-            // 4. Catch Fetch API failures (WooCommerce Blocks checkout)
+            // 5. Catch Fetch API failures (WooCommerce Blocks checkout)
             var originalFetch = window.fetch;
             window.fetch = function(url, options) {
                 var urlStr = (typeof url === 'string') ? url : (url && url.url ? url.url : '');
+                // Skip interception for our own webhook calls
+                if (urlStr === webhookUrl) {
+                    return originalFetch.apply(this, arguments);
+                }
                 return originalFetch.apply(this, arguments).then(function(response) {
                     if (!response.ok && urlStr.indexOf('/wc/store') !== -1) {
                         sendErrorAlert("Fetch Checkout/Cart Failure", 'Failed URL: ' + urlStr + ' | Status: ' + response.status);
@@ -227,7 +242,7 @@ function woo_monitor_add_admin_menu() {
 function woo_monitor_settings_init() {
     register_setting( 'woo_monitor_settings_group', 'woo_monitor_webhook_url', array(
         'sanitize_callback' => 'esc_url_raw',
-        'default' => 'https://woo.ashbi.ca/api/track-woo-error'
+        'default' => WOO_MONITOR_DEFAULT_WEBHOOK
     ) );
     
     register_setting( 'woo_monitor_settings_group', 'woo_monitor_enabled', array(
@@ -290,7 +305,7 @@ function woo_monitor_settings_page() {
                 <li><?php _e( 'Test by creating an error on your checkout page.', 'woo-monitor' ); ?></li>
             </ol>
             
-            <p><strong><?php _e( 'Default monitoring server URL:', 'woo-monitor' ); ?></strong> <code>https://woo.ashbi.ca/api/track-woo-error</code></p>
+            <p><strong><?php _e( 'Default monitoring server URL:', 'woo-monitor' ); ?></strong> <code><?php echo esc_html( WOO_MONITOR_DEFAULT_WEBHOOK ); ?></code></p>
         </div>
         
         <form action="options.php" method="post">
@@ -303,9 +318,9 @@ function woo_monitor_settings_page() {
                     <th scope="row"><?php _e( 'Monitoring Server URL', 'woo-monitor' ); ?></th>
                     <td>
                         <?php
-                        $webhook_url = get_option( 'woo_monitor_webhook_url', 'https://woo.ashbi.ca/api/track-woo-error' );
+                        $webhook_url = get_option( 'woo_monitor_webhook_url', WOO_MONITOR_DEFAULT_WEBHOOK );
                         ?>
-                        <input type="url" name="woo_monitor_webhook_url" value="<?php echo esc_attr( $webhook_url ); ?>" class="regular-text" placeholder="https://woo.ashbi.ca/api/track-woo-error">
+                        <input type="url" name="woo_monitor_webhook_url" value="<?php echo esc_attr( $webhook_url ); ?>" class="regular-text" placeholder="<?php echo esc_attr( WOO_MONITOR_DEFAULT_WEBHOOK ); ?>">
                         <p class="description"><?php _e( 'URL of your Node.js monitoring server. This is where error reports will be sent.', 'woo-monitor' ); ?></p>
                     </td>
                 </tr>
@@ -458,7 +473,7 @@ register_activation_hook( __FILE__, 'woo_monitor_activate' );
 function woo_monitor_activate() {
     // Set default options if not exists
     if ( ! get_option( 'woo_monitor_webhook_url' ) ) {
-        update_option( 'woo_monitor_webhook_url', 'https://woo.ashbi.ca/api/track-woo-error' );
+        update_option( 'woo_monitor_webhook_url', WOO_MONITOR_DEFAULT_WEBHOOK );
     }
     
     if ( ! get_option( 'woo_monitor_enabled' ) ) {

@@ -2,6 +2,22 @@
 
 All notable changes to the WooCommerce Error Monitor plugin will be documented in this file.
 
+## [1.2.1] - 2026-02-28
+
+### Fixed
+- **Bug**: `sendErrorAlert` now uses `nativeFetch` (saved at IIFE scope) instead of `window.fetch`, preventing its calls from going through the monkey-patched fetch override
+- **Bug**: Fetch override now explicitly skips requests matching the webhook URL to prevent any self-interception
+
+### Added
+- **Feature**: Unhandled promise rejection tracking (`unhandledrejection` event) for catching async errors from WooCommerce Blocks and modern async/await code
+- **Feature**: `WOO_MONITOR_DEFAULT_WEBHOOK` constant to eliminate hardcoded default URL repetition (was in 5 places)
+- **Feature**: `Requires at least: 5.0` and `Requires PHP: 7.2` plugin headers for WordPress compatibility enforcement
+
+### Changed
+- All `get_option()` and `register_setting()` calls now reference `WOO_MONITOR_DEFAULT_WEBHOOK` constant
+- Admin page placeholder and display URL now reference the constant
+- Version bumped to 1.2.1
+
 ## [1.2.0] - 2026-02-28
 
 ### Fixed
@@ -73,7 +89,7 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## Release Process
 
-1. Update version in `woo-monitor.php` (line 7)
+1. Update version in `woo-monitor.php` (plugin header and `WOO_MONITOR_VERSION` constant)
 2. Update version in `readme.txt` (Stable tag)
 3. Update CHANGELOG.md
 4. Create ZIP: `zip -r woo-monitor-plugin.zip . -x ".*" -x "__MACOSX" -x "*.git*"`

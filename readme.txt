@@ -4,7 +4,7 @@ Tags: woocommerce, monitoring, error tracking, checkout, alerts
 Requires at least: 5.0
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 1.2.0
+Stable tag: 1.2.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -93,6 +93,13 @@ The plugin should work with any WordPress theme and most plugins. It uses standa
 
 == Changelog ==
 
+= 1.2.1 =
+* **FEATURE**: Unhandled promise rejection tracking for async WooCommerce errors
+* **BUG FIX**: sendErrorAlert now uses native fetch, bypassing monkey-patched override
+* **BUG FIX**: Fetch override skips webhook URL to prevent self-interception
+* **IMPROVEMENT**: Default webhook URL extracted into constant
+* **IMPROVEMENT**: Added Requires at least and Requires PHP plugin headers
+
 = 1.2.0 =
 * **SECURITY**: Fixed double-escaping of webhook URL that mangled URLs with query parameters
 * **FEATURE**: Added Fetch API interception for WooCommerce Blocks checkout support
@@ -124,6 +131,12 @@ The plugin should work with any WordPress theme and most plugins. It uses standa
 * JavaScript error tracking
 
 == Upgrade Notice ==
+
+= 1.2.1 =
+Adds async error tracking, fixes fetch override self-interception, adds WordPress compatibility headers.
+
+= 1.2.0 =
+Security fix, WooCommerce Blocks support, one-click test button. Settings preserved.
 
 = 1.1.1 =
 Bug fix release. Settings from previous versions are preserved.
