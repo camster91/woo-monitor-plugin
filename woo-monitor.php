@@ -76,27 +76,42 @@ function woo_monitor_frontend_tracker() {
     ?>
     <script>
     document.addEventListener("DOMContentLoaded", function() {
-        const webhookUrl = "<?php echo $webhook_url; ?>";
+        const webhookUrl = <?php echo wp_json_encode( $webhook_url ); ?>;
         const siteName = window.location.hostname;
+        let errorCount = 0;
+        const maxErrorsPerPage = 10;
+        console.log('WooMonitor: Webhook URL configured');
         
         <?php if ( $track_ui_errors ) : ?>
         // 1. Catch WooCommerce UI Error Banners (e.g., "Invalid Card", "No shipping options")
-        const observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
-                const errorNodes = document.querySelectorAll('.woocommerce-error, .woocommerce-NoticeGroup-checkout, .wc-block-components-notice-banner.is-error');
-                errorNodes.forEach(node => {
-                    // Prevent duplicate sending
-                    if (!node.dataset.reported) {
-                        node.dataset.reported = "true";
-                        sendErrorAlert("WooCommerce UI Error", node.innerText.trim());
+        function checkErrorNode(node) {
+            if (node.nodeType !== 1) return;
+            if (node.matches && node.matches('.woocommerce-error, .woocommerce-NoticeGroup-checkout, .wc-block-components-notice-banner.is-error')) {
+                if (!node.dataset.reported) {
+                    node.dataset.reported = "true";
+                    sendErrorAlert("WooCommerce UI Error", node.innerText.trim());
+                }
+            }
+            // Also check children of the added node
+            const childErrors = node.querySelectorAll && node.querySelectorAll('.woocommerce-error, .woocommerce-NoticeGroup-checkout, .wc-block-components-notice-banner.is-error');
+            if (childErrors) {
+                childErrors.forEach(function(child) {
+                    if (!child.dataset.reported) {
+                        child.dataset.reported = "true";
+                        sendErrorAlert("WooCommerce UI Error", child.innerText.trim());
                     }
                 });
+            }
+        }
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                mutation.addedNodes.forEach(checkErrorNode);
             });
         });
         observer.observe(document.body, { childList: true, subtree: true });
         <?php endif; ?>
 
-        <?php if ( $track_ajax_errors && function_exists( 'wp_script_is' ) && wp_script_is( 'jquery', 'enqueued' ) ) : ?>
+        <?php if ( $track_ajax_errors && wp_script_is( 'jquery', 'enqueued' ) ) : ?>
         // 2. Catch AJAX "Add to Cart" or "Checkout" Failures
         if (typeof jQuery !== 'undefined') {
             jQuery(document).ajaxError(function(event, jqxhr, settings, thrownError) {
@@ -118,6 +133,13 @@ function woo_monitor_frontend_tracker() {
         <?php endif; ?>
 
         function sendErrorAlert(type, message) {
+            // Rate limit: max errors per page load
+            if (errorCount >= maxErrorsPerPage) {
+                console.warn('WooMonitor: Rate limit reached (' + maxErrorsPerPage + ' errors). Suppressing further reports.');
+                return;
+            }
+            errorCount++;
+
             // Don't send if the webhook URL is a placeholder
             if (webhookUrl.includes('example.com') || webhookUrl.includes('your-server.com')) {
                 console.warn('WooMonitor: Webhook URL not properly configured in plugin settings.');
