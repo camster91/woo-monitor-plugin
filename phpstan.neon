@@ -1,0 +1,18 @@
+parameters:
+    level: 5
+    paths:
+        - .
+    excludePaths:
+        - vendor/*
+        - tests/*
+        - node_modules/*
+        - .github/*
+        - bin/*
+        - '*.js'
+        - '*.css'
+        - '*.md'
+        - '*.txt'
+        - '*.json'
+        - '*.xml'
+    checkMissingIterableValueType: false
+    checkGenericClassInNonGenericObjectType: false

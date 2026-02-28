@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<psalm
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="https://getpsalm.org/schema/config"
+    xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
+    errorLevel="4"
+    resolveFromConfigFile="true"
+    findUnusedCode="false"
+    findUnusedBaselineEntry="false"
+    ensureArrayStringOffsetsExist="true"
+>
+    <projectFiles>
+        <directory name="." />
+        <ignoreFiles>
+            <directory name="vendor" />
+            <directory name="tests" />
+            <directory name="node_modules" />
+            <directory name=".github" />
+            <directory name="bin" />
+            <file name="**/*.js" />
+            <file name="**/*.css" />
+            <file name="**/*.md" />
+            <file name="**/*.txt" />
+            <file name="**/*.json" />
+            <file name="**/*.xml" />
+        </ignoreFiles>
+    </projectFiles>
+
+    <issueHandlers>
+        <LessSpecificReturnType errorLevel="info" />
+        <MissingReturnType errorLevel="info" />
+        <MissingClosureReturnType errorLevel="info" />
+        <MissingParamType errorLevel="info" />
+    </issueHandlers>
+
+    <plugins>
+        <pluginClass class="Psalm\WordPress\Plugin" />
+    </plugins>
+</psalm>
