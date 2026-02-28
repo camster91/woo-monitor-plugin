@@ -54,8 +54,8 @@ git push -u origin main
 6. **Publish release**
 
 ## Verify Release
-- URL: https://github.com/camster91/woo-monitor-plugin/releases/tag/v1.1.2
-- Download: https://github.com/camster91/woo-monitor-plugin/releases/download/v1.1.2/woo-monitor-plugin.zip
+- URL: https://github.com/camster91/woo-monitor-plugin/releases/tag/v1.2.2
+- Download: https://github.com/camster91/woo-monitor-plugin/releases/download/v1.2.2/woo-monitor-plugin.zip
 
 ## Update Deployment Documentation
 After pushing to GitHub, update:
