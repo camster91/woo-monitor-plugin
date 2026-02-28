@@ -2,6 +2,45 @@
 
 All notable changes to the WooCommerce Error Monitor plugin will be documented in this file.
 
+## [1.2.1] - 2026-02-28
+
+### Fixed
+- **Bug**: `sendErrorAlert` now uses `nativeFetch` (saved at IIFE scope) instead of `window.fetch`, preventing its calls from going through the monkey-patched fetch override
+- **Bug**: Fetch override now explicitly skips requests matching the webhook URL to prevent any self-interception
+
+### Added
+- **Feature**: Unhandled promise rejection tracking (`unhandledrejection` event) for catching async errors from WooCommerce Blocks and modern async/await code
+- **Feature**: `WOO_MONITOR_DEFAULT_WEBHOOK` constant to eliminate hardcoded default URL repetition (was in 5 places)
+- **Feature**: `Requires at least: 5.0` and `Requires PHP: 7.2` plugin headers for WordPress compatibility enforcement
+
+### Changed
+- All `get_option()` and `register_setting()` calls now reference `WOO_MONITOR_DEFAULT_WEBHOOK` constant
+- Admin page placeholder and display URL now reference the constant
+- Version bumped to 1.2.1
+
+## [1.2.0] - 2026-02-28
+
+### Fixed
+- **Security**: Removed double-escaping of webhook URL (`esc_url` + `wp_json_encode`) that mangled URLs containing query parameters
+- **Critical**: Moved JS error handler outside `DOMContentLoaded` so errors before DOM ready are no longer missed
+- **Bug**: Empty error messages are now filtered out before sending to server
+- **UX**: Checkbox descriptions moved outside `<label>` elements so clicking description no longer toggles the checkbox
+
+### Added
+- **Feature**: Fetch API interception for WooCommerce Blocks checkout support (catches errors from block-based checkout)
+- **Feature**: "Send Test Alert" button on admin settings page for one-click connection verification
+- **Feature**: Script deduplication guard (`window._wooMonitorLoaded`) prevents double-loading
+- **Feature**: `Requires Plugins: woocommerce` header for WordPress 6.5+ dependency enforcement
+- **Feature**: `WOO_MONITOR_VERSION` constant for programmatic version access
+- **Feature**: Success log (`WooMonitor: Sent error alert`) on successful sends, matching troubleshooting docs
+
+### Changed
+- Replaced inline `style=""` attributes with WordPress admin CSS classes (`card`)
+- Consistent JS syntax (no mixed arrow functions / `function()` declarations)
+- Updated AJAX tracking label to "Track AJAX and Fetch errors" with updated description
+- Removed empty `woo_monitor_deactivate()` function
+- Version bumped to 1.2.0
+
 ## [1.1.1] - 2026-02-23
 
 ### Fixed
@@ -50,7 +89,7 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## Release Process
 
-1. Update version in `woo-monitor.php` (line 7)
+1. Update version in `woo-monitor.php` (plugin header and `WOO_MONITOR_VERSION` constant)
 2. Update version in `readme.txt` (Stable tag)
 3. Update CHANGELOG.md
 4. Create ZIP: `zip -r woo-monitor-plugin.zip . -x ".*" -x "__MACOSX" -x "*.git*"`

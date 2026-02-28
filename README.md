@@ -1,13 +1,13 @@
 # WooCommerce Error Monitor - WordPress Plugin
 
-**Version 1.1.1** - Patched with all critical bug fixes
+**Version 1.2.1** - Async error tracking, fetch isolation, hardened architecture
 
 A WordPress plugin that tracks WooCommerce checkout errors, JavaScript crashes, and broken buttons, sending alerts to a central Node.js monitoring server.
 
 ## 🚀 Quick Start
 
 ### 1. Download Plugin
-- **Latest Release**: [`woo-monitor-plugin.zip`](https://github.com/camster91/woo-monitor-plugin/releases/latest) (v1.1.1)
+- **Latest Release**: [`woo-monitor-plugin.zip`](https://github.com/camster91/woo-monitor-plugin/releases/latest) (v1.2.1)
 - **Direct Download**: [woo-monitor-plugin.zip](https://github.com/camster91/woo-monitor-plugin/raw/main/woo-monitor-plugin.zip)
 
 ### 2. Install on WordPress
@@ -25,21 +25,14 @@ A WordPress plugin that tracks WooCommerce checkout errors, JavaScript crashes, 
 - **Server Repository**: https://github.com/camster91/woo-monitor
 - **Deploy to Coolify**: See [deployment guide](https://github.com/camster91/woo-monitor/blob/master/START_HERE.md)
 
-## ✅ Bug Fixes (Version 1.1.1)
+## ✅ What's New (Version 1.2.1)
 
-This version includes critical bug fixes:
-
-### **Fixed Issues**:
-1. **Missing "Enabled" Check**: Plugin now properly checks the `woo_monitor_enabled` setting
-2. **Unused Tracking Options**: JS/AJAX/UI tracking options now work correctly
-3. **No Request Timeout**: Added 5-second timeout with `AbortController` to prevent browser hanging
-4. **Improved Error Handling**: Better logging and timeout handling
-
-### **New Features**:
-- **Timeout Handling**: 5-second timeout for failed requests
-- **Optimized Loading**: Script only loads when tracking options are enabled
-- **Better jQuery Check**: Verifies jQuery is enqueued before adding AJAX handler
-- **Enhanced Settings UI**: Descriptions for each tracking option
+### **Key Improvements**:
+1. **WooCommerce Blocks Support**: Monitors Fetch API calls for block-based checkout errors
+2. **Async Error Tracking**: Catches unhandled promise rejections from async operations
+3. **One-Click Testing**: "Send Test Alert" button in admin settings to verify server connection
+4. **Security Hardened**: Fixed URL escaping, added WordPress dependency headers
+5. **Better Performance**: Fetch override skips non-WC requests, plugin uses native fetch for its own calls
 
 ## 📋 Features
 
@@ -48,7 +41,7 @@ This version includes critical bug fixes:
   - WooCommerce UI error banners (e.g., "Invalid Card", "No shipping options")
   - AJAX "Add to Cart" and checkout failures
   - JavaScript crashes that might break buttons
-  - Potentially stuck/unresponsive buttons
+  - Fetch API failures (WooCommerce Blocks checkout)
 - **Configurable Settings**: Admin interface for customizing tracking options
 - **Centralized Monitoring**: Sends errors to your Node.js monitoring server
 - **Lightweight**: Only loads on WooCommerce pages (checkout, cart, product)
@@ -58,7 +51,7 @@ This version includes critical bug fixes:
 
 ### 1. **Error Detection**
 - **WooCommerce UI Errors**: Uses `MutationObserver` to detect `.woocommerce-error` elements
-- **AJAX Failures**: Catches jQuery AJAX errors on checkout/cart endpoints
+- **AJAX/Fetch Failures**: Catches jQuery AJAX and Fetch API errors on checkout/cart endpoints (including WooCommerce Blocks)
 - **JavaScript Crashes**: Global window error events
 - **Smart Loading**: Only loads on WooCommerce pages (checkout, cart, product)
 
@@ -92,10 +85,12 @@ Only error information is sent:
 ```
 woo-monitor-plugin/
 ├── woo-monitor.php          # Main plugin file (all-in-one)
-├── readme.txt              # WordPress.org readme
-├── README.md               # GitHub readme (this file)
-├── LICENSE                 # GPL v2 license
-└── composer.json          # PHP dependencies
+├── uninstall.php            # Cleanup on plugin deletion
+├── readme.txt               # WordPress.org readme
+├── README.md                # GitHub readme (this file)
+├── CHANGELOG.md             # Version history
+├── LICENSE                  # GPL v2 license
+└── composer.json            # PHP dependencies
 ```
 
 **Note**: This is a single-file plugin (no separate admin directory) to avoid activation issues.
@@ -106,19 +101,21 @@ woo-monitor-plugin/
 - Activate plugin, verify no PHP errors
 - Check **Settings → WooCommerce Monitor** page loads
 
-### 2. **Test Error Tracking**
+### 2. **Test Server Connection**
+- Go to **Settings → WooCommerce Monitor**
+- Click **"Send Test Alert"** button — shows success/failure immediately
+- Or test manually via CLI:
 ```bash
-# Test server connection
 curl -X POST https://woo.ashbi.ca/api/track-woo-error \
   -H "Content-Type: application/json" \
   -d '{"site":"test.com","type":"test","error_message":"test"}'
 ```
 
-### 3. **Test Bug Fixes**
-- **Enable/Disable monitoring** in settings
-- **Toggle individual tracking options** (JS/AJAX/UI)
-- **Test timeout**: Set invalid webhook URL, verify 5-second timeout
-- **Verify** errors are only tracked when enabled
+### 3. **Test Frontend Tracking**
+- Visit a product, cart, or checkout page
+- Open browser DevTools (F12) → Console tab
+- Verify `WooMonitor: Webhook URL configured` appears
+- Trigger an error → verify `WooMonitor: Sent error alert` appears
 
 ## 🔧 Troubleshooting
 
@@ -169,7 +166,22 @@ zip -r woo-monitor-plugin.zip . -x ".*" -x "__MACOSX" -x "*.git*"
 
 ## 📝 Changelog
 
-### **1.1.1** (Current - Patched)
+### **1.2.1** (Current)
+- **FEATURE**: Unhandled promise rejection tracking for async WooCommerce errors
+- **BUG FIX**: `sendErrorAlert` now uses native fetch, bypassing the monkey-patched override
+- **BUG FIX**: Fetch override skips webhook URL to prevent self-interception
+- **IMPROVEMENT**: Default webhook URL extracted into `WOO_MONITOR_DEFAULT_WEBHOOK` constant
+- **IMPROVEMENT**: Added `Requires at least` and `Requires PHP` plugin headers
+
+### **1.2.0**
+- **SECURITY**: Fixed double-escaping of webhook URL that mangled URLs with query parameters
+- **FEATURE**: Fetch API interception for WooCommerce Blocks checkout
+- **FEATURE**: "Send Test Alert" button in admin settings
+- **BUG FIX**: JS error handler catches errors before DOMContentLoaded
+- **BUG FIX**: Empty error messages filtered out before sending
+- **IMPROVEMENT**: Script deduplication, consistent JS syntax, WordPress CSS classes
+
+### **1.1.1**
 - **BUG FIX**: Added check for enabled setting
 - **BUG FIX**: Added checks for individual tracking options  
 - **IMPROVEMENT**: Added 5-second timeout with `AbortController`
