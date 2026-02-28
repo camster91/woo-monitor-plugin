@@ -3,17 +3,20 @@
  * Plugin Name: WooCommerce Error Monitor
  * Plugin URI: https://ashbi.ca
  * Description: Tracks WooCommerce checkout errors, JS crashes, and broken buttons, sending alerts to a central Node.js monitoring server.
- * Version: 1.1.1
+ * Version: 1.2.0
  * Author: Ashbi
  * Author URI: https://ashbi.ca
  * License: GPL2
  * Text Domain: woo-monitor
+ * Requires Plugins: woocommerce
  */
 
 // Exit if accessed directly
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
+
+define( 'WOO_MONITOR_VERSION', '1.2.0' );
 
 // Initialize plugin
 add_action( 'plugins_loaded', 'woo_monitor_init' );
@@ -62,8 +65,6 @@ function woo_monitor_frontend_tracker() {
         return;
     }
     
-    $webhook_url = esc_url( $webhook_url );
-    
     // Get tracking options
     $track_js_errors = get_option( 'woo_monitor_track_js_errors', 'yes' ) === 'yes';
     $track_ajax_errors = get_option( 'woo_monitor_track_ajax_errors', 'yes' ) === 'yes';
@@ -75,80 +76,32 @@ function woo_monitor_frontend_tracker() {
     }
     ?>
     <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const webhookUrl = <?php echo wp_json_encode( $webhook_url ); ?>;
-        const siteName = window.location.hostname;
-        let errorCount = 0;
-        const maxErrorsPerPage = 10;
+    (function() {
+        if (window._wooMonitorLoaded) return;
+        window._wooMonitorLoaded = true;
+
+        var webhookUrl = <?php echo wp_json_encode( $webhook_url ); ?>;
+        var siteName = window.location.hostname;
+        var errorCount = 0;
+        var maxErrorsPerPage = 10;
         console.log('WooMonitor: Webhook URL configured');
-        
-        <?php if ( $track_ui_errors ) : ?>
-        // 1. Catch WooCommerce UI Error Banners (e.g., "Invalid Card", "No shipping options")
-        function checkErrorNode(node) {
-            if (node.nodeType !== 1) return;
-            if (node.matches && node.matches('.woocommerce-error, .woocommerce-NoticeGroup-checkout, .wc-block-components-notice-banner.is-error')) {
-                if (!node.dataset.reported) {
-                    node.dataset.reported = "true";
-                    sendErrorAlert("WooCommerce UI Error", node.innerText.trim());
-                }
-            }
-            // Also check children of the added node
-            const childErrors = node.querySelectorAll && node.querySelectorAll('.woocommerce-error, .woocommerce-NoticeGroup-checkout, .wc-block-components-notice-banner.is-error');
-            if (childErrors) {
-                childErrors.forEach(function(child) {
-                    if (!child.dataset.reported) {
-                        child.dataset.reported = "true";
-                        sendErrorAlert("WooCommerce UI Error", child.innerText.trim());
-                    }
-                });
-            }
-        }
-        const observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
-                mutation.addedNodes.forEach(checkErrorNode);
-            });
-        });
-        observer.observe(document.body, { childList: true, subtree: true });
-        <?php endif; ?>
-
-        <?php if ( $track_ajax_errors && wp_script_is( 'jquery', 'enqueued' ) ) : ?>
-        // 2. Catch AJAX "Add to Cart" or "Checkout" Failures
-        if (typeof jQuery !== 'undefined') {
-            jQuery(document).ajaxError(function(event, jqxhr, settings, thrownError) {
-                if (settings.url && (settings.url.includes('wc-ajax=add_to_cart') || settings.url.includes('wc-ajax=checkout') || settings.url.includes('wc-ajax=update_order_review'))) {
-                    sendErrorAlert("AJAX Checkout/Cart Failure", `Failed URL: ${settings.url} | Error: ${jqxhr.statusText} | Status: ${jqxhr.status}`);
-                }
-            });
-        }
-        <?php endif; ?>
-
-        <?php if ( $track_js_errors ) : ?>
-        // 3. Catch Global JavaScript Errors (This catches broken/unclickable buttons from cached JS/Themes)
-        window.addEventListener('error', function(e) {
-            // Ignore benign third-party errors, focus on main thread that might break checkout
-            if (e.filename && e.filename.includes(siteName)) {
-                sendErrorAlert("JavaScript Crash (Might break buttons)", `${e.message} at ${e.filename}:${e.lineno}:${e.colno}`);
-            }
-        });
-        <?php endif; ?>
 
         function sendErrorAlert(type, message) {
-            // Rate limit: max errors per page load
+            if (!message || message.trim() === '') return;
+
             if (errorCount >= maxErrorsPerPage) {
                 console.warn('WooMonitor: Rate limit reached (' + maxErrorsPerPage + ' errors). Suppressing further reports.');
                 return;
             }
             errorCount++;
 
-            // Don't send if the webhook URL is a placeholder
-            if (webhookUrl.includes('example.com') || webhookUrl.includes('your-server.com')) {
+            if (webhookUrl.indexOf('example.com') !== -1 || webhookUrl.indexOf('your-server.com') !== -1) {
                 console.warn('WooMonitor: Webhook URL not properly configured in plugin settings.');
                 return;
             }
 
-            // Add timeout to prevent hanging requests
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000);
+            var controller = new AbortController();
+            var timeoutId = setTimeout(function() { controller.abort(); }, 5000);
 
             fetch(webhookUrl, {
                 method: "POST",
@@ -157,15 +110,17 @@ function woo_monitor_frontend_tracker() {
                     site: siteName,
                     url: window.location.href,
                     type: type,
-                    error_message: message.substring(0, 1000), // Limit length
+                    error_message: message.substring(0, 1000),
                     time: new Date().toISOString(),
                     user_agent: navigator.userAgent
                 }),
                 signal: controller.signal
             })
-            .then(response => {
+            .then(function(response) {
                 clearTimeout(timeoutId);
-                if (!response.ok) {
+                if (response.ok) {
+                    console.log('WooMonitor: Sent error alert -', type);
+                } else {
                     console.error('WooMonitor: Server returned error:', response.status);
                 }
             })
@@ -178,7 +133,77 @@ function woo_monitor_frontend_tracker() {
                 }
             });
         }
-    });
+
+        <?php if ( $track_js_errors ) : ?>
+        // 1. Catch Global JavaScript Errors - registered early to catch pre-DOMReady crashes
+        window.addEventListener('error', function(e) {
+            if (e.filename && e.filename.indexOf(siteName) !== -1) {
+                sendErrorAlert("JavaScript Crash (Might break buttons)", e.message + ' at ' + e.filename + ':' + e.lineno + ':' + e.colno);
+            }
+        });
+        <?php endif; ?>
+
+        document.addEventListener("DOMContentLoaded", function() {
+            <?php if ( $track_ui_errors ) : ?>
+            // 2. Catch WooCommerce UI Error Banners (e.g., "Invalid Card", "No shipping options")
+            var errorSelector = '.woocommerce-error, .woocommerce-NoticeGroup-checkout, .wc-block-components-notice-banner.is-error';
+            function checkErrorNode(node) {
+                if (node.nodeType !== 1) return;
+                if (node.matches && node.matches(errorSelector)) {
+                    if (!node.dataset.reported) {
+                        node.dataset.reported = "true";
+                        sendErrorAlert("WooCommerce UI Error", node.innerText.trim());
+                    }
+                }
+                if (node.querySelectorAll) {
+                    var childErrors = node.querySelectorAll(errorSelector);
+                    childErrors.forEach(function(child) {
+                        if (!child.dataset.reported) {
+                            child.dataset.reported = "true";
+                            sendErrorAlert("WooCommerce UI Error", child.innerText.trim());
+                        }
+                    });
+                }
+            }
+            var observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    mutation.addedNodes.forEach(checkErrorNode);
+                });
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
+            <?php endif; ?>
+
+            <?php if ( $track_ajax_errors ) : ?>
+            // 3. Catch AJAX "Add to Cart" or "Checkout" Failures (jQuery)
+            <?php if ( wp_script_is( 'jquery', 'enqueued' ) ) : ?>
+            if (typeof jQuery !== 'undefined') {
+                jQuery(document).ajaxError(function(event, jqxhr, settings) {
+                    if (settings.url && (settings.url.indexOf('wc-ajax=add_to_cart') !== -1 || settings.url.indexOf('wc-ajax=checkout') !== -1 || settings.url.indexOf('wc-ajax=update_order_review') !== -1)) {
+                        sendErrorAlert("AJAX Checkout/Cart Failure", 'Failed URL: ' + settings.url + ' | Error: ' + jqxhr.statusText + ' | Status: ' + jqxhr.status);
+                    }
+                });
+            }
+            <?php endif; ?>
+
+            // 4. Catch Fetch API failures (WooCommerce Blocks checkout)
+            var originalFetch = window.fetch;
+            window.fetch = function(url, options) {
+                var urlStr = (typeof url === 'string') ? url : (url && url.url ? url.url : '');
+                return originalFetch.apply(this, arguments).then(function(response) {
+                    if (!response.ok && urlStr.indexOf('/wc/store') !== -1) {
+                        sendErrorAlert("Fetch Checkout/Cart Failure", 'Failed URL: ' + urlStr + ' | Status: ' + response.status);
+                    }
+                    return response;
+                }).catch(function(error) {
+                    if (urlStr.indexOf('/wc/store') !== -1) {
+                        sendErrorAlert("Fetch Checkout/Cart Failure", 'Failed URL: ' + urlStr + ' | Error: ' + error.message);
+                    }
+                    throw error;
+                });
+            };
+            <?php endif; ?>
+        });
+    })();
     </script>
     <?php
 }
@@ -246,7 +271,7 @@ function woo_monitor_settings_page() {
     <div class="wrap">
         <h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
         
-        <div style="background: #fff; border: 1px solid #ccd0d4; padding: 20px; margin: 20px 0; border-radius: 4px;">
+        <div class="card" style="margin: 20px 0; padding: 20px;">
             <h2><?php _e( 'About WooCommerce Error Monitor', 'woo-monitor' ); ?></h2>
             <p><?php _e( 'This plugin tracks checkout errors, JavaScript crashes, and broken buttons on your WooCommerce store, sending alerts to a central monitoring server.', 'woo-monitor' ); ?></p>
             
@@ -310,20 +335,22 @@ function woo_monitor_settings_page() {
                             <label>
                                 <input type="checkbox" name="woo_monitor_track_js_errors" value="yes" <?php checked( $track_js, 'yes' ); ?>>
                                 <?php _e( 'Track JavaScript errors', 'woo-monitor' ); ?>
-                                <p class="description"><?php _e( 'Catches JavaScript crashes that might break buttons', 'woo-monitor' ); ?></p>
-                            </label><br>
-                            
+                            </label>
+                            <p class="description"><?php _e( 'Catches JavaScript crashes that might break buttons', 'woo-monitor' ); ?></p>
+                            <br>
+
                             <label>
                                 <input type="checkbox" name="woo_monitor_track_ajax_errors" value="yes" <?php checked( $track_ajax, 'yes' ); ?>>
-                                <?php _e( 'Track AJAX errors', 'woo-monitor' ); ?>
-                                <p class="description"><?php _e( 'Catches failed add-to-cart and checkout requests', 'woo-monitor' ); ?></p>
-                            </label><br>
-                            
+                                <?php _e( 'Track AJAX and Fetch errors', 'woo-monitor' ); ?>
+                            </label>
+                            <p class="description"><?php _e( 'Catches failed add-to-cart and checkout requests (jQuery AJAX and Fetch API for WooCommerce Blocks)', 'woo-monitor' ); ?></p>
+                            <br>
+
                             <label>
                                 <input type="checkbox" name="woo_monitor_track_ui_errors" value="yes" <?php checked( $track_ui, 'yes' ); ?>>
                                 <?php _e( 'Track UI error messages', 'woo-monitor' ); ?>
-                                <p class="description"><?php _e( 'Catches WooCommerce error banners (e.g., "Invalid Card")', 'woo-monitor' ); ?></p>
                             </label>
+                            <p class="description"><?php _e( 'Catches WooCommerce error banners (e.g., "Invalid Card")', 'woo-monitor' ); ?></p>
                         </fieldset>
                     </td>
                 </tr>
@@ -332,20 +359,77 @@ function woo_monitor_settings_page() {
             <?php submit_button( __( 'Save Settings', 'woo-monitor' ) ); ?>
         </form>
         
-        <div style="margin-top: 30px; padding: 20px; background: #f0f6fc; border: 1px solid #c3c4c7;">
+        <div class="card" style="margin-top: 20px; padding: 20px;">
+            <h3><?php _e( 'Test Connection', 'woo-monitor' ); ?></h3>
+            <p><?php _e( 'Send a test error alert to verify your monitoring server is reachable.', 'woo-monitor' ); ?></p>
+            <button type="button" id="woo-monitor-test-btn" class="button button-secondary">
+                <?php _e( 'Send Test Alert', 'woo-monitor' ); ?>
+            </button>
+            <span id="woo-monitor-test-result" style="margin-left: 10px;"></span>
+            <script>
+            document.getElementById('woo-monitor-test-btn').addEventListener('click', function() {
+                var btn = this;
+                var result = document.getElementById('woo-monitor-test-result');
+                var url = <?php echo wp_json_encode( get_option( 'woo_monitor_webhook_url', '' ) ); ?>;
+                if (!url) {
+                    result.textContent = '<?php echo esc_js( __( 'No webhook URL configured.', 'woo-monitor' ) ); ?>';
+                    result.style.color = '#d63638';
+                    return;
+                }
+                btn.disabled = true;
+                btn.textContent = '<?php echo esc_js( __( 'Sending...', 'woo-monitor' ) ); ?>';
+                result.textContent = '';
+                var controller = new AbortController();
+                var timeoutId = setTimeout(function() { controller.abort(); }, 5000);
+                fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        site: window.location.hostname,
+                        url: window.location.href,
+                        type: 'Test Alert',
+                        error_message: 'This is a test alert from WooCommerce Error Monitor settings page.',
+                        time: new Date().toISOString(),
+                        user_agent: navigator.userAgent
+                    }),
+                    signal: controller.signal
+                }).then(function(response) {
+                    clearTimeout(timeoutId);
+                    if (response.ok) {
+                        result.textContent = '<?php echo esc_js( __( 'Success! Server responded OK.', 'woo-monitor' ) ); ?>';
+                        result.style.color = '#00a32a';
+                    } else {
+                        result.textContent = '<?php echo esc_js( __( 'Server returned error: ', 'woo-monitor' ) ); ?>' + response.status;
+                        result.style.color = '#d63638';
+                    }
+                }).catch(function(error) {
+                    clearTimeout(timeoutId);
+                    if (error.name === 'AbortError') {
+                        result.textContent = '<?php echo esc_js( __( 'Request timed out after 5 seconds.', 'woo-monitor' ) ); ?>';
+                    } else {
+                        result.textContent = '<?php echo esc_js( __( 'Connection failed: ', 'woo-monitor' ) ); ?>' + error.message;
+                    }
+                    result.style.color = '#d63638';
+                }).finally(function() {
+                    btn.disabled = false;
+                    btn.textContent = '<?php echo esc_js( __( 'Send Test Alert', 'woo-monitor' ) ); ?>';
+                });
+            });
+            </script>
+        </div>
+
+        <div class="card" style="margin-top: 20px; padding: 20px;">
             <h3><?php _e( 'Testing & Troubleshooting', 'woo-monitor' ); ?></h3>
-            
-            <h4><?php _e( 'Test the Connection', 'woo-monitor' ); ?></h4>
-            <p><?php _e( 'To test if the plugin is working:', 'woo-monitor' ); ?></p>
+
+            <h4><?php _e( 'Verify Frontend Tracking', 'woo-monitor' ); ?></h4>
             <ol>
-                <li><?php _e( 'Go to a product page on your site', 'woo-monitor' ); ?></li>
-                <li><?php _e( 'Open browser Developer Tools (F12)', 'woo-monitor' ); ?></li>
-                <li><?php _e( 'Go to the Console tab', 'woo-monitor' ); ?></li>
+                <li><?php _e( 'Go to a product, cart, or checkout page on your site', 'woo-monitor' ); ?></li>
+                <li><?php _e( 'Open browser Developer Tools (F12) and go to the Console tab', 'woo-monitor' ); ?></li>
                 <li><?php _e( 'You should see "WooMonitor: Webhook URL configured" message', 'woo-monitor' ); ?></li>
-                <li><?php _e( 'Try to trigger an error (e.g., add to cart without selecting required options)', 'woo-monitor' ); ?></li>
+                <li><?php _e( 'Trigger an error (e.g., submit checkout with invalid data)', 'woo-monitor' ); ?></li>
                 <li><?php _e( 'Check console for "WooMonitor: Sent error alert" messages', 'woo-monitor' ); ?></li>
             </ol>
-            
+
             <h4><?php _e( 'Common Issues', 'woo-monitor' ); ?></h4>
             <ul>
                 <li><strong><?php _e( 'No errors being sent:', 'woo-monitor' ); ?></strong> <?php _e( 'Check that WooCommerce is active and the webhook URL is correct.', 'woo-monitor' ); ?></li>
@@ -394,10 +478,3 @@ function woo_monitor_activate() {
     }
 }
 
-/**
- * Deactivation hook
- */
-register_deactivation_hook( __FILE__, 'woo_monitor_deactivate' );
-function woo_monitor_deactivate() {
-    // Clean up if needed
-}

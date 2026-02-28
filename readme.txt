@@ -2,9 +2,9 @@
 Contributors: cameronashbi
 Tags: woocommerce, monitoring, error tracking, checkout, alerts
 Requires at least: 5.0
-Tested up to: 6.5
+Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 1.1.1
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -15,9 +15,9 @@ Track WooCommerce checkout errors, JavaScript crashes, and broken buttons, sendi
 **WooCommerce Error Monitor** is a powerful plugin that helps you catch and fix checkout issues before they cost you sales. It monitors your WooCommerce store for:
 
 * **Checkout Errors**: Invalid card messages, shipping errors, and other WooCommerce UI error banners
-* **JavaScript Crashes**: Broken scripts that make buttons unclickable
-* **AJAX Failures**: Failed add-to-cart and checkout requests
-* **Button Issues**: Buttons that appear stuck or unresponsive
+* **JavaScript Crashes**: Broken scripts that may break checkout functionality
+* **AJAX Failures**: Failed add-to-cart and checkout requests (jQuery AJAX)
+* **Fetch API Failures**: Failed WooCommerce Blocks checkout requests (Fetch API)
 
 All errors are sent to a central Node.js monitoring server (separate application) which can send email alerts, helping you fix issues quickly.
 
@@ -92,6 +92,17 @@ Only error information: site domain, URL, error type, error message, timestamp, 
 The plugin should work with any WordPress theme and most plugins. It uses standard WooCommerce classes and JavaScript events.
 
 == Changelog ==
+
+= 1.2.0 =
+* **SECURITY**: Fixed double-escaping of webhook URL that mangled URLs with query parameters
+* **FEATURE**: Added Fetch API interception for WooCommerce Blocks checkout support
+* **FEATURE**: Added "Send Test Alert" button in admin settings
+* **BUG FIX**: JavaScript error handler now catches errors before DOMContentLoaded
+* **BUG FIX**: Empty error messages are now filtered out
+* **IMPROVEMENT**: Added script deduplication guard
+* **IMPROVEMENT**: Added Requires Plugins header for WooCommerce dependency
+* **IMPROVEMENT**: Fixed checkbox description UX in admin settings
+* **IMPROVEMENT**: Added version constant for programmatic use
 
 = 1.1.1 =
 * **BUG FIX**: Added check for enabled setting

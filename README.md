@@ -1,6 +1,6 @@
 # WooCommerce Error Monitor - WordPress Plugin
 
-**Version 1.1.1** - Patched with all critical bug fixes
+**Version 1.2.0** - Full audit: security fixes, WooCommerce Blocks support, UX improvements
 
 A WordPress plugin that tracks WooCommerce checkout errors, JavaScript crashes, and broken buttons, sending alerts to a central Node.js monitoring server.
 
@@ -48,7 +48,7 @@ This version includes critical bug fixes:
   - WooCommerce UI error banners (e.g., "Invalid Card", "No shipping options")
   - AJAX "Add to Cart" and checkout failures
   - JavaScript crashes that might break buttons
-  - Potentially stuck/unresponsive buttons
+  - Fetch API failures (WooCommerce Blocks checkout)
 - **Configurable Settings**: Admin interface for customizing tracking options
 - **Centralized Monitoring**: Sends errors to your Node.js monitoring server
 - **Lightweight**: Only loads on WooCommerce pages (checkout, cart, product)
@@ -58,7 +58,7 @@ This version includes critical bug fixes:
 
 ### 1. **Error Detection**
 - **WooCommerce UI Errors**: Uses `MutationObserver` to detect `.woocommerce-error` elements
-- **AJAX Failures**: Catches jQuery AJAX errors on checkout/cart endpoints
+- **AJAX/Fetch Failures**: Catches jQuery AJAX and Fetch API errors on checkout/cart endpoints (including WooCommerce Blocks)
 - **JavaScript Crashes**: Global window error events
 - **Smart Loading**: Only loads on WooCommerce pages (checkout, cart, product)
 
@@ -92,10 +92,12 @@ Only error information is sent:
 ```
 woo-monitor-plugin/
 ├── woo-monitor.php          # Main plugin file (all-in-one)
-├── readme.txt              # WordPress.org readme
-├── README.md               # GitHub readme (this file)
-├── LICENSE                 # GPL v2 license
-└── composer.json          # PHP dependencies
+├── uninstall.php            # Cleanup on plugin deletion
+├── readme.txt               # WordPress.org readme
+├── README.md                # GitHub readme (this file)
+├── CHANGELOG.md             # Version history
+├── LICENSE                  # GPL v2 license
+└── composer.json            # PHP dependencies
 ```
 
 **Note**: This is a single-file plugin (no separate admin directory) to avoid activation issues.
@@ -169,7 +171,19 @@ zip -r woo-monitor-plugin.zip . -x ".*" -x "__MACOSX" -x "*.git*"
 
 ## 📝 Changelog
 
-### **1.1.1** (Current - Patched)
+### **1.2.0** (Current)
+- **SECURITY**: Fixed double-escaping of webhook URL that mangled URLs with query parameters
+- **FEATURE**: Added Fetch API interception for WooCommerce Blocks checkout support
+- **FEATURE**: Added "Send Test Alert" button in admin settings
+- **BUG FIX**: JavaScript error handler now catches errors before DOMContentLoaded
+- **BUG FIX**: Empty error messages are now filtered out
+- **IMPROVEMENT**: Script deduplication guard prevents double-loading
+- **IMPROVEMENT**: Added `Requires Plugins: woocommerce` header
+- **IMPROVEMENT**: Fixed checkbox UX in admin settings
+- **IMPROVEMENT**: Replaced inline styles with WordPress admin CSS classes
+- **IMPROVEMENT**: Consistent JS syntax throughout
+
+### **1.1.1** (Patched)
 - **BUG FIX**: Added check for enabled setting
 - **BUG FIX**: Added checks for individual tracking options  
 - **IMPROVEMENT**: Added 5-second timeout with `AbortController`
