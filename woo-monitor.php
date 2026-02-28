@@ -3,9 +3,10 @@
  * Plugin Name: WooCommerce Error Monitor
  * Plugin URI: https://ashbi.ca
  * Description: Tracks WooCommerce checkout errors, JS crashes, and broken buttons, sending alerts to a central Node.js monitoring server.
- * Version: 1.1.1
+ * Version: 1.1.2
  * Author: Cameron Smith
  * License: GPL2
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: woo-monitor
  */
 

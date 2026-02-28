@@ -22,20 +22,27 @@ git push -u origin main
 ## Create Release on GitHub
 
 1. Go to: https://github.com/camster91/woo-monitor-plugin/releases/new
-2. **Tag**: `v1.1.1`
-3. **Title**: `Version 1.1.1 - Patched with bug fixes`
+2. **Tag**: `v1.1.2`
+3. **Title**: `Version 1.1.2 - Security & Quality Release`
 4. **Description**:
    ```
-   ## WooCommerce Error Monitor v1.1.1
+   ## WooCommerce Error Monitor v1.1.2
    
-   Patched version with all critical bug fixes.
+   Security and quality release with comprehensive test suite.
    
-   ### Bug Fixes:
-   - Added check for enabled setting (was missing)
-   - Added checks for individual tracking options (JS/AJAX/UI)
-   - Added 5-second timeout with AbortController
-   - Better error logging and timeout handling
-   - Optimized script loading
+   ### Security Enhancements:
+   - Comprehensive security audit performed
+   - Added nonce verification for all form submissions
+   - Implemented proper input sanitization for user data
+   - Added output escaping for all user-facing strings
+   - Created SECURITY.md with best practices documentation
+   
+   ### Quality Improvements:
+   - Comprehensive PHPUnit test suite added
+   - GitHub Actions CI/CD pipeline for automated testing
+   - Enhanced code quality and WordPress standards compliance
+   - Updated directory structure for better maintainability
+   - Improved plugin headers and metadata
    
    ### Installation:
    1. Download woo-monitor-plugin.zip
@@ -47,8 +54,8 @@ git push -u origin main
 6. **Publish release**
 
 ## Verify Release
-- URL: https://github.com/camster91/woo-monitor-plugin/releases/tag/v1.1.1
-- Download: https://github.com/camster91/woo-monitor-plugin/releases/download/v1.1.1/woo-monitor-plugin.zip
+- URL: https://github.com/camster91/woo-monitor-plugin/releases/tag/v1.1.2
+- Download: https://github.com/camster91/woo-monitor-plugin/releases/download/v1.1.2/woo-monitor-plugin.zip
 
 ## Update Deployment Documentation
 After pushing to GitHub, update:

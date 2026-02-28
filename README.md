@@ -1,13 +1,13 @@
 # WooCommerce Error Monitor - WordPress Plugin
 
-**Version 1.1.1** - Patched with all critical bug fixes
+**Version 1.1.2** - Security & Quality Release
 
 A WordPress plugin that tracks WooCommerce checkout errors, JavaScript crashes, and broken buttons, sending alerts to a central Node.js monitoring server.
 
 ## 🚀 Quick Start
 
 ### 1. Download Plugin
-- **Latest Release**: [`woo-monitor-plugin.zip`](https://github.com/camster91/woo-monitor-plugin/releases/latest) (v1.1.1)
+- **Latest Release**: [`woo-monitor-plugin.zip`](https://github.com/camster91/woo-monitor-plugin/releases/latest) (v1.1.2)
 - **Direct Download**: [woo-monitor-plugin.zip](https://github.com/camster91/woo-monitor-plugin/raw/main/woo-monitor-plugin.zip)
 
 ### 2. Install on WordPress
@@ -25,21 +25,23 @@ A WordPress plugin that tracks WooCommerce checkout errors, JavaScript crashes, 
 - **Server Repository**: https://github.com/camster91/woo-monitor
 - **Deploy to Coolify**: See [deployment guide](https://github.com/camster91/woo-monitor/blob/master/START_HERE.md)
 
-## ✅ Bug Fixes (Version 1.1.1)
+## ✅ Latest Release (Version 1.1.2)
 
-This version includes critical bug fixes:
+This version includes security enhancements and quality improvements:
 
-### **Fixed Issues**:
-1. **Missing "Enabled" Check**: Plugin now properly checks the `woo_monitor_enabled` setting
-2. **Unused Tracking Options**: JS/AJAX/UI tracking options now work correctly
-3. **No Request Timeout**: Added 5-second timeout with `AbortController` to prevent browser hanging
-4. **Improved Error Handling**: Better logging and timeout handling
+### **Security Enhancements**:
+- **Security Audit**: Comprehensive security audit performed
+- **Nonce Verification**: Added nonce verification for all form submissions
+- **Input Sanitization**: Implemented proper input sanitization for user data
+- **Output Escaping**: Added output escaping for all user-facing strings
+- **SECURITY.md**: Created security best practices documentation
 
-### **New Features**:
-- **Timeout Handling**: 5-second timeout for failed requests
-- **Optimized Loading**: Script only loads when tracking options are enabled
-- **Better jQuery Check**: Verifies jQuery is enqueued before adding AJAX handler
-- **Enhanced Settings UI**: Descriptions for each tracking option
+### **Quality Improvements**:
+- **Test Suite**: Comprehensive PHPUnit test suite added
+- **CI/CD Pipeline**: GitHub Actions workflow for automated testing
+- **Code Standards**: Enhanced code quality and WordPress standards compliance
+- **Directory Structure**: Updated organization for better maintainability
+- **Plugin Metadata**: Improved plugin headers and documentation
 
 ## 📋 Features
 
@@ -169,7 +171,18 @@ zip -r woo-monitor-plugin.zip . -x ".*" -x "__MACOSX" -x "*.git*"
 
 ## 📝 Changelog
 
-### **1.1.1** (Current - Patched)
+### **1.1.2** (Current - Security & Quality Release)
+- **ADDED**: Comprehensive test suite with PHPUnit
+- **ADDED**: GitHub Actions CI/CD pipeline
+- **SECURITY**: Security audit and fixes
+- **SECURITY**: Added nonce verification for form submissions
+- **SECURITY**: Implemented proper input sanitization and output escaping
+- **IMPROVEMENT**: Updated directory structure for better organization
+- **IMPROVEMENT**: Enhanced code quality and standards compliance
+- **IMPROVEMENT**: Improved plugin headers and metadata
+- **IMPROVEMENT**: Created SECURITY.md with best practices guidelines
+
+### **1.1.1** (Patched)
 - **BUG FIX**: Added check for enabled setting
 - **BUG FIX**: Added checks for individual tracking options  
 - **IMPROVEMENT**: Added 5-second timeout with `AbortController`

@@ -4,7 +4,7 @@ Tags: woocommerce, monitoring, error tracking, checkout, alerts
 Requires at least: 5.0
 Tested up to: 6.5
 Requires PHP: 7.2
-Stable tag: 1.1.1
+Stable tag: 1.1.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -93,6 +93,17 @@ The plugin should work with any WordPress theme and most plugins. It uses standa
 
 == Changelog ==
 
+= 1.1.2 =
+* **ADDED**: Comprehensive test suite with PHPUnit
+* **ADDED**: GitHub Actions CI/CD pipeline
+* **SECURITY**: Security audit and fixes
+* **SECURITY**: Added nonce verification for form submissions
+* **SECURITY**: Implemented proper input sanitization and output escaping
+* **IMPROVEMENT**: Updated directory structure for better organization
+* **IMPROVEMENT**: Enhanced code quality and standards compliance
+* **IMPROVEMENT**: Improved plugin headers and metadata
+* **IMPROVEMENT**: Created SECURITY.md with best practices guidelines
+
 = 1.1.1 =
 * **BUG FIX**: Added check for enabled setting
 * **BUG FIX**: Added checks for individual tracking options
@@ -113,6 +124,9 @@ The plugin should work with any WordPress theme and most plugins. It uses standa
 * JavaScript error tracking
 
 == Upgrade Notice ==
+
+= 1.1.2 =
+Security and quality release. Adds comprehensive test suite, security enhancements, and improved code structure.
 
 = 1.1.1 =
 Bug fix release. Settings from previous versions are preserved.

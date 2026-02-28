@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit
+	bootstrap="tests/bootstrap.php"
+	backupGlobals="false"
+	colors="true"
+	convertErrorsToExceptions="true"
+	convertNoticesToExceptions="true"
+	convertWarningsToExceptions="true"
+	verbose="true"
+>
+	<testsuites>
+		<testsuite name="WooCommerce Error Monitor Tests">
+			<directory suffix="-test.php">tests</directory>
+			<directory suffix=".php">tests</directory>
+		</testsuite>
+	</testsuites>
+	
+	<filter>
+		<whitelist processUncoveredFilesFromWhitelist="false">
+			<directory suffix=".php">.</directory>
+			<exclude>
+				<directory>tests</directory>
+				<directory>vendor</directory>
+				<directory>node_modules</directory>
+			</exclude>
+		</whitelist>
+	</filter>
+	
+	<logging>
+		<log type="coverage-html" target="coverage"/>
+		<log type="coverage-clover" target="clover.xml"/>
+		<log type="junit" target="junit-report.xml"/>
+	</logging>
+</phpunit>

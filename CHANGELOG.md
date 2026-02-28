@@ -1,3 +1,27 @@
+## [1.1.2] - 2026-02-27
+
+### Added
+- Comprehensive test suite with PHPUnit
+- GitHub Actions CI/CD pipeline
+- Security audit and fixes
+- Improved documentation
+
+### Changed
+- Updated directory structure for better organization
+- Enhanced code quality and standards compliance
+- Improved plugin headers and metadata
+
+### Fixed
+- Security vulnerabilities identified during audit
+- Missing ABSPATH checks in included files
+- Code quality issues reported by static analysis
+
+### Security
+- Added nonce verification for form submissions
+- Implemented proper input sanitization
+- Added output escaping for all user-facing strings
+- Created SECURITY.md with best practices guidelines
+
 # Changelog
 
 All notable changes to the WooCommerce Error Monitor plugin will be documented in this file.
